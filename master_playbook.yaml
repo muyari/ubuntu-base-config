@@ -5,13 +5,13 @@
   tasks:
     - name: Set the hostname
       hostname:
-        name: "new-hostname"
+        name: "ubuntu-server"
 
     - name: Update /etc/hosts with the new hostname
       lineinfile:
         path: /etc/hosts
         regexp: '^127\.0\.1\.1\s+'
-        line: "127.0.1.1 new-hostname"
+        line: "127.0.1.1 ubuntu-server"
         owner: root
         group: root
         mode: '0644'
@@ -19,13 +19,13 @@
     - name: Update /etc/hostname with the new hostname
       lineinfile:
         path: /etc/hostname
-        line: "new-hostname"
+        line: "ubuntu-server"
         owner: root
         group: root
         mode: '0644'
 
     - name: Apply the new hostname
-      command: hostnamectl set-hostname "new-hostname"
+      command: hostnamectl set-hostname "ubuntu-server"
 
 - name: Docker Admin
   hosts: all
@@ -155,3 +155,26 @@
     - name: Notify user to reboot
       debug:
         msg: "Please reboot the system manually to apply the updates."
+
+- name: Create a cronjob for update_system.sh
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ensure the shell script update_system.sh exists
+      copy:
+        src: /sc/ubuntu-base-config/update_system.sh
+        dest: /usr/local/bin/update_system.sh
+
+    - name: Make update_system.sh executable
+      file:
+        path: /usr/local/bin/update_system.sh
+        mode: '0755'
+        state: file
+
+    - name: Create a cronjob to run update_system.sh every morning at 9am UTC
+      cron:
+        name: "Run update_system.sh every morning at 9am UTC"
+        minute: "0"
+        hour: "9"
+        job: "/usr/local/bin/update_system.sh"
