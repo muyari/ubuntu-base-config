@@ -179,7 +179,7 @@
         hour: "9"
         job: "/usr/local/bin/update_system.sh"
 
-- name: Add relaunch_vpn.sh to crontab
+- name: Add relaunch_vpn.sh to run at reboot
   hosts: all
   become: yes
 
@@ -195,9 +195,8 @@
         mode: '0755'
         state: file
 
-    - name: Add relaunch_vpn.sh to crontab
+    - name: Add relaunch_vpn.sh to crontab to run at reboot
       cron:
-        name: "Relaunch VPN script"
-        minute: "0"
-        hour: "*/2"
+        name: "Relaunch VPN script at reboot"
+        special_time: "@reboot"
         job: "/usr/local/bin/relaunch_vpn.sh"
