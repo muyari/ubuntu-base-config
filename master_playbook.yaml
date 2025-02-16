@@ -178,3 +178,26 @@
         minute: "0"
         hour: "9"
         job: "/usr/local/bin/update_system.sh"
+
+- name: Add relaunch_vpn.sh to crontab
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Ensure the shell script relaunch_vpn.sh exists
+      copy:
+        src: /sc/ubuntu-base-config/relaunch_vpn.sh
+        dest: /usr/local/bin/relaunch_vpn.sh
+
+    - name: Make relaunch_vpn.sh executable
+      file:
+        path: /usr/local/bin/relaunch_vpn.sh
+        mode: '0755'
+        state: file
+
+    - name: Add relaunch_vpn.sh to crontab
+      cron:
+        name: "Relaunch VPN script"
+        minute: "0"
+        hour: "*/2"
+        job: "/usr/local/bin/relaunch_vpn.sh"
