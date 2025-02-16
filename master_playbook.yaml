@@ -1,0 +1,157 @@
+---
+- name: Change Hostname
+  hosts: all
+  become: yes
+  tasks:
+    - name: Set the hostname
+      hostname:
+        name: "new-hostname"
+
+    - name: Update /etc/hosts with the new hostname
+      lineinfile:
+        path: /etc/hosts
+        regexp: '^127\.0\.1\.1\s+'
+        line: "127.0.1.1 new-hostname"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Update /etc/hostname with the new hostname
+      lineinfile:
+        path: /etc/hostname
+        line: "new-hostname"
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Apply the new hostname
+      command: hostnamectl set-hostname "new-hostname"
+
+- name: Docker Admin
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ensure the 'docker' group exists
+      group:
+        name: docker
+        state: present
+
+    - name: Add user 'ubuntu' to the 'docker' group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Restart Docker to apply group changes
+      systemd:
+        name: docker
+        state: restarted
+        enabled: yes
+
+- name: Static IP
+  hosts: all
+  become: yes
+  vars:
+    interface_name: enp0s3
+    static_ip: 192.168.68.171
+    netmask: 24
+    gateway: 192.168.68.1
+    dns_servers:
+      - 8.8.8.8
+      - 8.8.4.4
+  tasks:
+    - name: Ensure the netplan directory exists
+      file:
+        path: /etc/netplan
+        state: directory
+        mode: '0755'
+
+    - name: Create the netplan configuration file
+      template:
+        src: static_ip.yaml.j2
+        dest: /etc/netplan/01-netcfg.yaml
+        owner: root
+        group: root
+        mode: '0644'
+        force: yes
+
+    - name: Apply the netplan configuration
+      command: netplan apply
+
+- name: Deploy Portainer
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+
+    - name: Create Docker Compose directory
+      file:
+        path: /opt/docker/portainer
+        state: directory
+        mode: '0755'
+
+    - name: Create Docker Compose file for Portainer
+      copy:
+        content: |
+          version: '3.8'
+          services:
+            portainer:
+              image: portainer/portainer-ce:latest
+              container_name: portainer
+              restart: always
+              ports:
+                - "8000:8000"
+                - "9443:9443"
+              volumes:
+                - /var/run/docker.sock:/var/run/docker.sock
+                - portainer_data:/data
+          volumes:
+            portainer_data:
+        dest: /opt/docker/portainer/docker-compose.yml
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Start Portainer with Docker Compose
+      command: docker-compose -f /opt/docker/portainer/docker-compose.yml up -d
+
+    - name: Ensure Docker service is started
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+- name: Update System
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update the package list
+      apt:
+        update_cache: yes
+
+    - name: Upgrade all installed packages
+      apt:
+        name: "*"
+        state: latest
+
+    - name: Perform a distribution upgrade
+      apt:
+        upgrade: dist
+
+    - name: Clean up unnecessary packages and files
+      apt:
+        autoremove: yes
+        purge: yes
+
+    - name: Notify user to reboot
+      debug:
+        msg: "Please reboot the system manually to apply the updates."
