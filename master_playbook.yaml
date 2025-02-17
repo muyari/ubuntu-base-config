@@ -198,5 +198,5 @@
     - name: Add relaunch_vpn.sh to crontab to run at reboot
       cron:
         name: "Relaunch VPN script at reboot"
-        special_time: "@reboot"
+        special_time: "reboot"
         job: "/usr/local/bin/relaunch_vpn.sh"
