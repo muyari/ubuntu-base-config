@@ -5,13 +5,13 @@
   tasks:
     - name: Set the hostname
       hostname:
-        name: "ubuntu-server"
+        name: "media-box"
 
     - name: Update /etc/hosts with the new hostname
       lineinfile:
         path: /etc/hosts
         regexp: '^127\.0\.1\.1\s+'
-        line: "127.0.1.1 ubuntu-server"
+        line: "127.0.1.1 media-box"
         owner: root
         group: root
         mode: '0644'
@@ -19,13 +19,13 @@
     - name: Update /etc/hostname with the new hostname
       lineinfile:
         path: /etc/hostname
-        line: "ubuntu-server"
+        line: "media-box"
         owner: root
         group: root
         mode: '0644'
 
     - name: Apply the new hostname
-      command: hostnamectl set-hostname "ubuntu-server"
+      command: hostnamectl set-hostname "media-box"
 
 - name: Docker Admin
   hosts: all
@@ -53,7 +53,7 @@
   become: yes
   vars:
     interface_name: enp0s3
-    static_ip: 192.168.68.171
+    static_ip: 192.168.68.130
     netmask: 24
     gateway: 192.168.68.1
     dns_servers:
@@ -200,3 +200,43 @@
         name: "Relaunch VPN script at reboot"
         special_time: "reboot"
         job: "/usr/local/bin/relaunch_vpn.sh"
+
+- name: Ensure /downloads/Movies exists and set permissions
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create /downloads/Movies directory
+      file:
+        path: /downloads/Movies
+        state: directory
+        mode: '0777'
+        owner: root
+        group: root
+
+    - name: Ensure permissions for /downloads/completed/Movies
+      file:
+        path: /downloads/Movies
+        mode: '0777'
+        owner: root
+        group: root
+
+- name: Ensure /downloads/Series exists and set permissions
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Create /downloads/Series directory
+      file:
+        path: /downloads/Series
+        state: directory
+        mode: '0777'
+        owner: root
+        group: root
+
+    - name: Ensure permissions for /downloads/Series
+      file:
+        path: /downloads/Series
+        mode: '0777'
+        owner: root
+        group: root
